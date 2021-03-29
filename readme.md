@@ -7,7 +7,7 @@ A drop-in replacement for neofetch written in C
 
 ## Usage
 Simply run the executable
-	```vega```
+    vega
 
 ## Configuration
 The config file is compatible with existing neofetch configs and is located at
