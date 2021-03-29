@@ -1,5 +1,5 @@
 # Vega
-A drop-in replacement for neofetch written in C
+A neofetch replacement written in C
 
 
 
@@ -11,7 +11,6 @@ Simply run the executable
 	vega
 
 ## Configuration
-The config file is compatible with existing neofetch configs and is located at
-	~/.config/vega/vega.conf
+The configuration file is located at 
 
-To customize, simply do as one would with neofetch.
+	~/.config/vega/vega.conf
