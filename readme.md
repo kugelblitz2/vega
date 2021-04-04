@@ -1,5 +1,5 @@
 # Vega
-A neofetch replacement written in C
+A fetch program written in C
 
 
 
