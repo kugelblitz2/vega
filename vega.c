@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <sys/statvfs.h>
 #include <sys/utsname.h>
 #include <stdio.h>
 #include "vega.h"
@@ -56,13 +57,11 @@ char *get_shell();
 
 char *get_screenres();
 
-char *get_de();
+char *get_de();         // read $XDG_CURRENT_DESKTOP then /usr/bin/*session 
 
-char *get_wm();
+char *get_wm();         // $XDG_SESSION_TYPE or $DISPLAY/$WAYLAND_DISPLAY
 
-char *get_terminal();
-
-char *get_termfont();
+char *get_terminal();   // read $TERM
 
 char *get_cpuname();
 
@@ -119,11 +118,27 @@ long *get_swaptotal(){
 
 char *get_gpudriver();
 
-char *get_df();
+unsigned long *get_diskused(){
+    #ifdef __linux__
+        struct statvfs diskinfo;
+        statvfs(&diskinfo);
 
-char *get_battery();
+        // Disk space used in bytes
+        return (diskinfo.f_blocks - diskinfo.f_bavail) / diskinfo.f_blocks;
+    #endif
+}
 
-char *get_song();
+unsigned long *get_disktotal(){
+    #ifdef __linux__
+        struct statvfs diskinfo;
+        statvfs(&diskinfo);
+
+        // Disk space used in bytes
+        return diskinfo.f_blocks / diskinfo.f_blocks;
+    #endif 
+}
+
+char *get_battery();    // Read from /sys/class/power_supply/BATx/capacity
 
 char *get_localip();
 
