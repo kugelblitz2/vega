@@ -1,5 +1,4 @@
 #ifdef __APPLE__
-#include <stdlib.h>
 #include <sys/statvfs.h>
 #include <sys/utsname.h>
 #include <sys/sysctl.h>
@@ -57,10 +56,6 @@ int *get_cpuusage(){
 
 char *get_gpuname();
 
-char *get_vramused();
-
-char *get_vramtotal();
-
 long *get_ramused(){
 
 }
@@ -84,10 +79,6 @@ unsigned long *get_disktotal(){
 
 char *get_battery();
 
-char *get_localip();
-
-char *get_ipv4();
-
-char *get_ipv6();
+char *get_ip();
 
 #endif
