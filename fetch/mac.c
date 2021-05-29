@@ -45,7 +45,7 @@ char *get_screenres();
 
 char *get_de();
 
-char *get_wm();
+char *get_disp_protocol();
 
 char *get_terminal();
 

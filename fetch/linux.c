@@ -2,12 +2,14 @@
 #include <sys/utsname.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
-#include <pci/pci.h>        // man pcilib(7)
+#include <netdb.h>
 #include <ifaddrs.h>
+#include <pci/pci.h>
 #include <string.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 char *get_username(){
     return getenv("USER");
@@ -24,8 +26,8 @@ char *get_osname(){
     FILE *os_release;
 
     os_release = fopen("/etc/os-release", "r");
-    while(os_name != EOF){
-        fgets(os_name, 256, smbios);
+    while(*os_name != EOF){
+        fgets(os_name, 256, os_release);
         if(strncmp(os_name, "PRETTY_NAME", 11) == 0){
             os_name +=13;
             os_name[strlen(os_name)-2] = '\0';
@@ -46,7 +48,7 @@ char *get_hwname(char bitmask){
         fgets(read, 256, smbios);
 
         strcat (hardware_name, read);
-        strcat (hardware_name, '" "';
+        strcat (hardware_name, " ");
     }
     if((bitmask & 0b01000000) == 0b01000000){       // product_family
         char *read;
@@ -95,9 +97,9 @@ long *get_uptime(){
     return linuxinfo.uptime;
 }
 
-char *get_packages();   // hard code by system
+char *get_packages();       // hard code by system
 
-char *get_shell(){      // read /proc/$$/comm
+char *get_shell(){          // read /proc/$$/comm
     char *shell_name, *proc_path;
     FILE *comm;
 
@@ -113,15 +115,18 @@ char *get_shell(){      // read /proc/$$/comm
     return shell_name;
 }
 
-char *get_screenres(){  // read /sys/class/drm
+char *get_screenres(){      // read /sys/class/drm
     char *screen_resolutions, *vcardpath, *res;
     DIR *drm;
     FILE *modesfile;
-
-
+	
     drm = opendir("/sys/class/drm/");
-    while(drm != NULL){
+    while(1){
         // Gets modes path
+		struct dirent *directory = readdir(drm);
+
+		if(directory == NULL) break;
+
         vcardpath = readdir(drm)->d_name;
         strcat(vcardpath, "modes");
 
@@ -139,11 +144,49 @@ char *get_screenres(){  // read /sys/class/drm
     return screen_resolutions;
 }
 
-char *get_de();         // read $XDG_CURRENT_DESKTOP then /usr/bin/*session 
+char *get_de(){
+	return getenv("XDG_CURRENT_DESKTOP");
+}
 
-char *get_wm();         // $XDG_SESSION_TYPE or $DISPLAY/$WAYLAND_DISPLAY
+char *get_disp_protocol(){
+	return getenv("XDG_SESSION_TYPE");
+}
 
-char *get_terminal();   // read 4th value in /proc/$$/stat for PPID
+char *get_terminal(){       // read 4th value in /proc/$$/stat for PPID
+    char *term_name, *term_pid, *path;
+    FILE *PPID_comm;
+
+    // Read shell PPID
+    path = "/proc/";
+    strcat(path, getenv("$")); strcat(path, "/stat");
+    PPID_comm = fopen(path, "r");
+    fgets(term_pid, 256, PPID_comm);
+    fclose(PPID_comm);
+
+    // Extract shell PPID
+    int counter = 0, start, end;
+    for(int i = 0; i < 256; i++){
+        if(term_pid[0] == ' ') counter++;
+        if(counter == 3) start = i+1;
+        if(counter == 4){
+            end = i;
+            break;
+        }
+    }
+    term_pid[end] = '\0';
+    term_pid += start;
+
+    // Read terminal name
+    path = "/proc/";
+    strcat(path, term_pid);
+    strcat(path, "/comm");
+
+    PPID_comm = fopen(path, "r");
+    fgets(term_name, 256, PPID_comm);
+    fclose(PPID_comm);
+
+    return term_name;
+}
 
 char *get_cpuname(){
     char *cpu_name;
@@ -153,12 +196,12 @@ char *get_cpuname(){
     while(cpu_name != EOF){
         fgets(cpu_name, 256, cpuinfo);
         if(strncmp(cpu_name, "model name", 10) == 0){
-            os_name +=13;
-            os_name[strlen(os_name)-1] = '\0';
+            cpu_name +=13;
+            cpu_name[strlen(cpu_name)-1] = '\0';
             break;
         }
     }
-    return os_name;
+    return cpu_name;
 }
 
 int *get_cpuusage(){
@@ -167,7 +210,7 @@ int *get_cpuusage(){
 
     return (int) (100 * linuxinfo.loads[0]) / (get_nprocs() * SI_LOAD_SHIFT);
 }
-
+/*
 char *get_gpuname(char bitmask){
     struct pci_access *pciaccess;
     struct pci_dev *dev;
@@ -184,25 +227,25 @@ char *get_gpuname(char bitmask){
         // Checks if PCI device is a display controller
         if((device->device_class & 0300) == 0300){
             // pci_lookup_name needs a char buffer for some reason, I don't know what it does
-            *idkwhatthisdoes = malloc(100);
+            char *idkwhatthisdoes = malloc(100);
             
             // Reads vendor and/or device name and/or version
-            if((bitmask & 0b10000000) = 0b10000000){    // Vendor
+			if((bitmask & 0b10000000) == 0b10000000){    // Vendor
                 strcat(names, pci_lookup_name(pciaccess, idkwhatthisdoes, 100, PCI_LOOKUP_VENDOR, device->vendor_id));
                 strcat(names, " ");
             }
-            if((bitmask & 0b01000000) = 0b01000000){    // Device Name
+            if((bitmask & 0b01000000) == 0b01000000){    // Device Name
                 strcat(names, pci_lookup_name(pciaccess, idkwhatthisdoes, 100, PCI_LOOKUP_DEVICE, device->vendor_id, device->device_id));
                 strcat(names, " ");
             }
             names[strlen(names)-1] = '\0';
-            strcat(names, '\n');
+            strcat(names, "\n");
         }
     }
     names[strlen(names)-1] = '\0';
     return names;
 }
-
+*/
 long *get_ramused(){
     struct sysinfo linuxinfo;
     sysinfo(&linuxinfo);
@@ -231,24 +274,42 @@ long *get_swaptotal(){
     return linuxinfo.totalswap;
 }
 
-char *get_gpudriver();
-
 unsigned long *get_diskused(){
     struct statvfs diskinfo;
-    statvfs(&diskinfo);
+    statvfs("/", &diskinfo);
 
     // Disk space used in bytes
     return (diskinfo.f_blocks - diskinfo.f_bavail) / diskinfo.f_blocks;
+}
 
 unsigned long *get_disktotal(){
     struct statvfs diskinfo;
-    statvfs(&diskinfo);
+    statvfs("/", &diskinfo);
 
     // Disk space used in bytes
     return diskinfo.f_blocks / diskinfo.f_blocks;
 }
 
-char *get_battery();    // Read from /sys/class/power_supply/BATx/capacity
+char *get_battery(){	// Read from /sys/class/power_supply/BATx/capacity
+	char *batt_capacities;
+	DIR *BATx;
+	FILE *capacity;
+
+	for(int i = 0; i < 4; i++){
+		char *path = "/sys/class/power_supply/BAT", batt_num[2];
+        batt_num[0] = i+48; batt_num[1] = '\0';
+		strcat(path, batt_num); strcat(path, "/capacity");
+		
+		capacity = fopen(path, "r");
+		if(capacity == NULL) break;
+
+		char * read;
+		fgets(read, 256, capacity);
+		strcat(batt_capacities, read);
+	}
+
+	return batt_capacities;
+}
 
 char *get_ip(char bitmask){
     unsigned int addrtype = AF_INET;
@@ -269,7 +330,7 @@ char *get_ip(char bitmask){
         if(strncmp(ipaddr, "127", 3) || strncmp(ipaddr, "169", 3) || strncmp(ipaddr, "fe80", 4)) continue;      // Ignore loopback and localhost
 
         // Check for local IPv4
-        if(strncmp(ipaddr, "192", 3) || strncmp(ipaddr, "172", 3) || strncmp(ipaddr, "10'" 2)){
+        if(strncmp(ipaddr, "192", 3) || strncmp(ipaddr, "172", 3) || strncmp(ipaddr, "10", 2)){
             if(private_ip) break;       // Stop is private_ip is true
             else continue;              // Ignore otherwise
         }
