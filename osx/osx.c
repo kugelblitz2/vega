@@ -1,4 +1,3 @@
-#ifdef __APPLE__
 #include <sys/statvfs.h>
 #include <sys/utsname.h>
 #include <sys/sysctl.h>
@@ -81,4 +80,3 @@ char *get_battery();
 
 char *get_ip();
 
-#endif
