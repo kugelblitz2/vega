@@ -5,10 +5,12 @@ A fetch program written in C
 
 ## Compiling
 
+	gcc vega.c
+
 ## Usage
 Simply run the executable
 
-	vega
+	./vega
 
 ## Configuration
 The configuration file is located at 
