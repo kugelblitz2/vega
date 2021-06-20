@@ -1,6 +1,7 @@
 #include <sys/utsname.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <pci/pci.h>
@@ -43,40 +44,52 @@ char *get_hwname(char *returnptr, char bitmask){
     FILE *smbios;
 
     if((bitmask & 0b10000000) == 0b10000000){       // board_vendor
-        char *read;
+        char *read = malloc(256);
 	
         smbios = fopen("/sys/devices/virtual/dmi/id/board_vendor", "r");
         fgets(read, 256, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
+
+        returnptr[strlen(returnptr)-2] = ' ';
+        returnptr[strlen(returnptr)-1] = '\0';
     }
     if((bitmask & 0b01000000) == 0b01000000){       // product_family
-        char *read;
+        char *read = malloc(256);
 
         smbios = fopen("/sys/devices/virtual/dmi/id/product_family", "r");
         fgets(read, 256, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
+        
+        returnptr[strlen(returnptr)-2] = ' ';
+        returnptr[strlen(returnptr)-1] = '\0';
     }
     if((bitmask & 0b00100000) == 0b00100000){       // product_name
-        char *read;
+        char *read = malloc(256);
 
         smbios = fopen("/sys/devices/virtual/dmi/id/product_name", "r");
         fgets(read, 256, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
+        
+        returnptr[strlen(returnptr)-2] = ' ';
+        returnptr[strlen(returnptr)-1] = '\0';
     }
     if((bitmask & 0b00010000) == 0b00010000){       // product_version
-        char *read;
+        char *read = malloc(256);
 
         smbios = fopen("/sys/devices/virtual/dmi/id/product_version", "r");
         fgets(read, 256, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
+        
+        returnptr[strlen(returnptr)-2] = ' ';
+        returnptr[strlen(returnptr)-1] = '\0';
     }
     fclose(smbios);
 
@@ -102,52 +115,57 @@ long get_uptime(){
     return linuxinfo->uptime;
 }
 
-char *get_shell(char *returnptr){			// read /proc/$$/comm
-    char *proc_path;
+char *get_shell(char *returnptr){
+    char *path = malloc(32);
     FILE *comm;
 
-    // Get path for /proc/$$/comm
-    proc_path = "/proc/";
-    strcat(proc_path, getenv("$"));
-    strcat(proc_path, "/comm");
-    
-    // Read /proc/$$/comm
-    comm = fopen(proc_path, "r");
-    fgets(returnptr, 256, comm);
-    
+    // Get path for /proc/$$/comm (shell ppid)
+    sprintf(path, "/proc/%d/comm", getppid());
+
+    // Read /proc/$$/comm (shell ppid)
+    comm = fopen(path, "r");
+    fgets(returnptr, 256, comm);    
     fclose(comm);
+
+    returnptr[strlen(returnptr)-1] = '\0';
     return returnptr;
 }
 
 char *get_screenres(char *returnptr){		// read /sys/class/drm
-    char *screen_resolutions, *vcardpath, *res;
+    char *screen_resolutions = malloc(256), *vcardpath = malloc(64), *res = malloc(64);
     DIR *drm;
     FILE *modesfile;
 	
     drm = opendir("/sys/class/drm/");
     while(1){
         // Gets modes path
-	struct dirent *directory = readdir(drm);
+		struct dirent *directory = readdir(drm);
+		if(directory == NULL) break;
 		
-	if(directory == NULL) break;
-		
-        vcardpath = readdir(drm)->d_name;
-        strcat(vcardpath, "modes");
-		
-        // Opens modes file
+		// Opens status file
+		sprintf(vcardpath, "/sys/class/drm/%s/status", directory->d_name);
+		modesfile = fopen(vcardpath, "r");
+        if(modesfile == NULL) continue;
+        
+		// Checks if screen is connected
+		fgets(res, 64, modesfile);
+		fclose(modesfile);
+		if(strncmp(res, "connected", 9)) continue;
+
+		// Opens modes file
+		sprintf(vcardpath, "/sys/class/drm/%s/modes", directory->d_name);
         modesfile = fopen(vcardpath, "r");
         if(modesfile == NULL) continue;
-		
-        // Reads screen resolutions
-        while(*res != EOF){
-            fgets(res, 256, modesfile);
-            strcat(returnptr, res);
-			strcat(returnptr, " ");
-        }
-    returnptr[strlen(returnptr)-1] = '\0';
+        
+		// Reads screen resolutions
+        fgets(res, 64, modesfile);
+		if(*res == '\0') continue;
+        
+		strcat(returnptr, res);
+		fclose(modesfile);
     }
 	
-	fclose(modesfile);
+    returnptr[strlen(returnptr)-1] = '\0';
     return returnptr;
 }
 
@@ -165,22 +183,21 @@ char *get_disp_protocol(char *returnptr){
 	return returnptr;
 }
 
-char *get_terminal(char *returnptr){       // read 4th value in /proc/$$/stat for PPID
-    char *term_pid, *path;
-    FILE *PPID_comm;
+char *get_terminal(char *returnptr){
+    char *term_pid = malloc(256), *path = malloc(32);
+    FILE *comm;
 
-    // Read shell PPID
-    path = "/proc/";
-    strcat(path, getenv("$")); strcat(path, "/stat");
-    PPID_comm = fopen(path, "r");
-    fgets(term_pid, 256, PPID_comm);
-    fclose(PPID_comm);
+    // Get path for /proc/$$/stat (shell ppid)
+    sprintf(path, "/proc/%d/stat", getppid());
 
-    // Extract shell PPID
-    int counter = 0, start, end;
+    // Read /proc/$$/comm (shell ppid/terminal pid)
+    comm = fopen(path, "r");
+    fgets(term_pid, 256, comm);
+    fclose(comm);
+    int counter = 0, start = 0, end = 0;
     for(int i = 0; i < 256; i++){
-        if(term_pid[0] == ' ') counter++;
-        if(counter == 3) start = i+1;
+        if(term_pid[i] == ' ') counter++;
+        if(counter == 3 && start == 0) start = i+1;
         if(counter == 4){
             end = i;
             break;
@@ -188,35 +205,32 @@ char *get_terminal(char *returnptr){       // read 4th value in /proc/$$/stat fo
     }
     term_pid[end] = '\0';
     term_pid += start;
-
+    
     // Read terminal name
-    path = "/proc/";
-    strcat(path, term_pid);
-    strcat(path, "/comm");
+    sprintf(path, "/proc/%s/comm", term_pid);
+    
+    comm = fopen(path, "r");
+    fgets(returnptr, 256, comm);
+    fclose(comm);
 
-    PPID_comm = fopen(path, "r");
-    fgets(returnptr, 256, PPID_comm);
-    fclose(PPID_comm);
-
+    returnptr[strlen(returnptr)-1] = '\0';
     return returnptr;
 }
 
 char *get_cpuname(char *returnptr){
-    char *cpu_name;
     FILE *cpuinfo;
     
     cpuinfo = fopen("/proc/cpuinfo", "r");
-    while(*cpu_name != EOF){
-        fgets(cpu_name, 256, cpuinfo);
-        if(strncmp(cpu_name, "model name", 10) == 0){
-            cpu_name += 13;
-            cpu_name[strlen(cpu_name)-1] = '\0';
+    while(*returnptr != EOF){
+        fgets(returnptr, 256, cpuinfo);
+        if(strncmp(returnptr, "model name", 10) == 0){
+            returnptr += 13;
+            returnptr[strlen(returnptr)-1] = '\0';
             break;
         }
     }
     
     fclose(cpuinfo);
-    strcpy(returnptr, cpu_name);
     return returnptr;
 }
 /*
@@ -300,24 +314,55 @@ unsigned long get_disktotal(){
     return diskinfo.f_blocks * diskinfo.f_frsize;
 }
 
-char *get_battery(char *returnptr){		// Read from /sys/class/power_supply/BATx/capacity
-	DIR *BATx;
-	FILE *capacity;
+struct batteries get_battery(){
+	FILE *battery_data;
+	struct batteries batteries;
+	batteries.num_of_batts = 0;
 
-	for(int i = 0; i < 4; i++){
-		char *path = "/sys/class/power_supply/BAT", batt_num[2];
-		batt_num[0] = i+48; batt_num[1] = '\0';
-		strcat(path, batt_num); strcat(path, "/capacity");
+	for(int i = 0; true; i++){
+		char *path = malloc(64), *temp = malloc(16);
 		
-		capacity = fopen(path, "r");
-		if(capacity == NULL) break;
+		// Read battery status
+		sprintf(path, "/sys/class/power_supply/BAT%d/status", i);
+		battery_data = fopen(path, "r");
+		if(battery_data == NULL) break;
+		
+		batteries.num_of_batts++;
+		batteries.battery[i].charge_status = malloc(16);
+		fgets(batteries.battery[i].charge_status, 16, battery_data);
+		batteries.battery[i].charge_status[strlen(batteries.battery[i].charge_status)-1] = '\0';
+		fclose(battery_data);
 
-		char * read;
-		fgets(read, 256, capacity);
-		strcat(returnptr, read);
+		// Read battery design capacity
+		sprintf(path, "/sys/class/power_supply/BAT%d/energy_full_design", i);
+        battery_data = fopen(path, "r");
+		fgets(temp, 16, battery_data);
+		batteries.battery[i].design_capacity = atoi(temp);
+		fclose(battery_data);
+
+		// Read battery capacity
+		sprintf(path, "/sys/class/power_supply/BAT%d/energy_full", i);
+		battery_data = fopen(path, "r");
+		fgets(temp, 16, battery_data);
+		batteries.battery[i].charge_full = atoi(temp);
+        fclose(battery_data);
+
+		// Read battery remaining
+		sprintf(path, "/sys/class/power_supply/BAT%d/energy_now", i);
+		battery_data = fopen(path, "r");
+		fgets(temp, 16, battery_data);
+		batteries.battery[i].charge_now = atoi(temp);
+        fclose(battery_data);
+
+		// Read battery percent
+		sprintf(path, "/sys/class/power_supply/BAT%d/capacity", i);
+		battery_data = fopen(path, "r");
+		fgets(temp, 16, battery_data);
+		batteries.battery[i].charge_percent = atoi(temp);
+		fclose(battery_data);
 	}
 
-	return returnptr;
+	return batteries;
 }
 
 char *get_ip(char *returnptr, char bitmask){		// Only returns one IP address at a time, currently incapable of public ipv4

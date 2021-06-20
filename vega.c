@@ -15,7 +15,6 @@ int main(){
 	char *terminal = malloc(256);
 	char *cpuname = malloc(256);
 	
-	char *battery = malloc(256);
 	char *ip = malloc(256);
 
 
@@ -23,16 +22,16 @@ int main(){
 	printf("username %s\n", get_username(username));
 	printf("hostname %s\n", get_hostname(hostname));
 	printf("osname %s\n", get_osname(os_name));
-	//printf("hwname %s\n", get_hwname(hwname, 0b10000000));
+	printf("hwname %s\n", get_hwname(hwname, 0b11110000));
 	printf("kernel %s\n", get_kernel(kernel));
 
 	printf("uptime %ld\n", get_uptime());
 	
 	printf("shell %s\n", get_shell(shell));
-	//printf("screenres %s\n", get_screenres(screenres));
+	printf("screenres %s\n", get_screenres(screenres));
 	printf("de %s\n", get_de(de));
 	printf("disp_protocol %s\n", get_disp_protocol(disp_protocol));
-	//printf("terminal %s\n", get_terminal(terminal));
+	printf("terminal %s\n", get_terminal(terminal));
 	printf("cpuname %s\n", get_cpuname(cpuname));
 
 	printf("ramused %ld\n", get_ramused());
@@ -42,7 +41,14 @@ int main(){
 	printf("diskused %ld\n", get_diskused());
 	printf("disktotal %ld\n", get_disktotal());
 	
-	//printf("battery %s\n", get_battery(battery));
+	struct batteries batteries = get_battery();
+	
+	for(int i = 0; i < batteries.num_of_batts; i++){
+		printf("battery%d %d %d %d %d %s\n", i, batteries.battery[i].design_capacity, 
+			batteries.battery[i].charge_full, batteries.battery[i].charge_now, 
+			batteries.battery[i].charge_percent, batteries.battery[i].charge_status);
+	}
+	
 	printf("public ipv4 %s\n", get_ip(ip, 0b00000000));
 	printf("private ipv4 %s\n", get_ip(ip, 0b10000000));
 	printf("public ipv6 %s\n", get_ip(ip, 0b01000000));
