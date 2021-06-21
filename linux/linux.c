@@ -91,7 +91,7 @@ char *get_hwname(char *returnptr, char bitmask){
         returnptr[strlen(returnptr)-2] = ' ';
         returnptr[strlen(returnptr)-1] = '\0';
     }
-    fclose(smbios);
+    if(smbios != NULL) fclose(smbios);
 
     returnptr[strlen(returnptr)-1] = '\0';
     return returnptr;
@@ -109,10 +109,10 @@ char *get_kernel(char *returnptr){
 }
 
 long get_uptime(){
-    struct sysinfo *linuxinfo;
-    sysinfo(linuxinfo);
+    struct sysinfo linuxinfo;
+    sysinfo(&linuxinfo);
 
-    return linuxinfo->uptime;
+    return linuxinfo.uptime;
 }
 
 char *get_shell(char *returnptr){
@@ -132,7 +132,7 @@ char *get_shell(char *returnptr){
 }
 
 char *get_screenres(char *returnptr){		// read /sys/class/drm
-    char *screen_resolutions = malloc(256), *vcardpath = malloc(64), *res = malloc(64);
+    char *vcardpath = malloc(64), *res = malloc(64);
     DIR *drm;
     FILE *modesfile;
 	
@@ -236,7 +236,6 @@ char *get_cpuname(char *returnptr){
 
 char *get_gpuname(char *returnptr, char bitmask){
     struct pci_access *pciaccess;
-    struct pci_dev *dev;
 
     pciaccess = pci_alloc();
     pci_init(pciaccess);            // Initialize the PCI library

@@ -5,10 +5,10 @@ A fetch program written in C
 
 ## Compiling
 
-	gcc vega.c -lpci
+	make
 
 ## Usage
-Simply run the executable
+Run the executable
 
 	./vega
 
