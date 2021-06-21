@@ -28,7 +28,7 @@ char *get_de(char *returnptr);
 char *get_disp_protocol(char *returnptr);
 char *get_terminal(char *returnptr);
 char *get_cpuname(char *returnptr);
-char *get_gpuname(char *returnptr);
+char *get_gpuname(char *returnptr, char bitmask);
 
 long get_ramused();
 long get_ramtotal();

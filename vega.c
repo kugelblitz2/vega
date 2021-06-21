@@ -14,6 +14,7 @@ int main(){
 	char *disp_protocol = malloc(256);
 	char *terminal = malloc(256);
 	char *cpuname = malloc(256);
+	char *gpuname = malloc(256);
 	
 	char *ip = malloc(256);
 
@@ -33,6 +34,7 @@ int main(){
 	printf("disp_protocol %s\n", get_disp_protocol(disp_protocol));
 	printf("terminal %s\n", get_terminal(terminal));
 	printf("cpuname %s\n", get_cpuname(cpuname));
+	printf("gpuname %s\n", get_gpuname(gpuname, 0b11000000));
 
 	printf("ramused %ld\n", get_ramused());
 	printf("ramtotal %ld\n", get_ramtotal());

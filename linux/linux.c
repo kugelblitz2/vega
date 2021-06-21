@@ -233,12 +233,10 @@ char *get_cpuname(char *returnptr){
     fclose(cpuinfo);
     return returnptr;
 }
-/*
-char *get_gpuname(char bitmask){
+
+char *get_gpuname(char *returnptr, char bitmask){
     struct pci_access *pciaccess;
     struct pci_dev *dev;
-
-    char *names;
 
     pciaccess = pci_alloc();
     pci_init(pciaccess);            // Initialize the PCI library
@@ -248,27 +246,27 @@ char *get_gpuname(char bitmask){
         pci_fill_info(device, PCI_FILL_IDENT | PCI_FILL_BASES | PCI_FILL_CLASS);    // Reads PCI info
         
         // Checks if PCI device is a display controller
-        if((device->device_class & 0300) == 0300){
+        if((device->device_class & 0b1111111100000000) == 0x0300){
             // pci_lookup_name needs a char buffer for some reason, I don't know what it does
             char *idkwhatthisdoes = malloc(100);
             
             // Reads vendor and/or device name and/or version
 			if((bitmask & 0b10000000) == 0b10000000){    // Vendor
-                strcat(names, pci_lookup_name(pciaccess, idkwhatthisdoes, 100, PCI_LOOKUP_VENDOR, device->vendor_id));
-                strcat(names, " ");
+                strcat(returnptr, pci_lookup_name(pciaccess, idkwhatthisdoes, 100, PCI_LOOKUP_VENDOR, device->vendor_id));
+                strcat(returnptr, " ");
             }
             if((bitmask & 0b01000000) == 0b01000000){    // Device Name
-                strcat(names, pci_lookup_name(pciaccess, idkwhatthisdoes, 100, PCI_LOOKUP_DEVICE, device->vendor_id, device->device_id));
-                strcat(names, " ");
+                strcat(returnptr, pci_lookup_name(pciaccess, idkwhatthisdoes, 100, PCI_LOOKUP_DEVICE, device->vendor_id, device->device_id));
+                strcat(returnptr, " ");
             }
-            names[strlen(names)-1] = '\0';
-            strcat(names, "\n");
+            returnptr[strlen(returnptr)-1] = '\0';
+            strcat(returnptr, "\n");
         }
     }
-    names[strlen(names)-1] = '\0';
-    return names;
+    returnptr[strlen(returnptr)-1] = '\0';
+
+    return returnptr;
 }
-*/
 
 long get_ramused(){
     struct sysinfo linuxinfo;

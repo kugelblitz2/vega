@@ -5,7 +5,7 @@ A fetch program written in C
 
 ## Compiling
 
-	gcc vega.c
+	gcc vega.c -lpci
 
 ## Usage
 Simply run the executable
