@@ -29,9 +29,9 @@ char *get_osname(char *returnptr){
     os_release = fopen("/etc/os-release", "r");
 	
     while(*returnptr != EOF){
-        fgets(returnptr, 256, os_release);
+        fgets(returnptr, 128, os_release);
         if(strncmp(returnptr, "PRETTY_NAME", 11) == 0){
-            returnptr +=13;
+            returnptr += 13;
             returnptr[strlen(returnptr)-2] = '\0';
             break;
         }
@@ -42,12 +42,13 @@ char *get_osname(char *returnptr){
 
 char *get_hwname(char *returnptr, char bitmask){
     FILE *smbios;
+    returnptr[0] = 0;
 
     if((bitmask & 0b10000000) == 0b10000000){       // board_vendor
-        char *read = malloc(256);
+        char *read = malloc(128);
 	
         smbios = fopen("/sys/devices/virtual/dmi/id/board_vendor", "r");
-        fgets(read, 256, smbios);
+        fgets(read, 128, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
@@ -56,10 +57,10 @@ char *get_hwname(char *returnptr, char bitmask){
         returnptr[strlen(returnptr)-1] = '\0';
     }
     if((bitmask & 0b01000000) == 0b01000000){       // product_family
-        char *read = malloc(256);
+        char *read = malloc(128);
 
         smbios = fopen("/sys/devices/virtual/dmi/id/product_family", "r");
-        fgets(read, 256, smbios);
+        fgets(read, 128, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
@@ -68,10 +69,10 @@ char *get_hwname(char *returnptr, char bitmask){
         returnptr[strlen(returnptr)-1] = '\0';
     }
     if((bitmask & 0b00100000) == 0b00100000){       // product_name
-        char *read = malloc(256);
+        char *read = malloc(128);
 
         smbios = fopen("/sys/devices/virtual/dmi/id/product_name", "r");
-        fgets(read, 256, smbios);
+        fgets(read, 128, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
@@ -80,10 +81,10 @@ char *get_hwname(char *returnptr, char bitmask){
         returnptr[strlen(returnptr)-1] = '\0';
     }
     if((bitmask & 0b00010000) == 0b00010000){       // product_version
-        char *read = malloc(256);
+        char *read = malloc(128);
 
         smbios = fopen("/sys/devices/virtual/dmi/id/product_version", "r");
-        fgets(read, 256, smbios);
+        fgets(read, 128, smbios);
 
         strcat(returnptr, read);
         strcat(returnptr, " ");
@@ -124,7 +125,7 @@ char *get_shell(char *returnptr){
 
     // Read /proc/$$/comm (shell ppid)
     comm = fopen(path, "r");
-    fgets(returnptr, 256, comm);    
+    fgets(returnptr, 128, comm);    
     fclose(comm);
 
     returnptr[strlen(returnptr)-1] = '\0';
@@ -132,7 +133,7 @@ char *get_shell(char *returnptr){
 }
 
 char *get_screenres(char *returnptr){		// read /sys/class/drm
-    char *vcardpath = malloc(64), *res = malloc(64);
+    char *vcardpath = malloc(128), *res = malloc(128);
     DIR *drm;
     FILE *modesfile;
 	
@@ -148,7 +149,7 @@ char *get_screenres(char *returnptr){		// read /sys/class/drm
         if(modesfile == NULL) continue;
         
 		// Checks if screen is connected
-		fgets(res, 64, modesfile);
+		fgets(res, 128, modesfile);
 		fclose(modesfile);
 		if(strncmp(res, "connected", 9)) continue;
 
@@ -158,7 +159,7 @@ char *get_screenres(char *returnptr){		// read /sys/class/drm
         if(modesfile == NULL) continue;
         
 		// Reads screen resolutions
-        fgets(res, 64, modesfile);
+        fgets(res, 128, modesfile);
 		if(*res == '\0') continue;
         
 		strcat(returnptr, res);
@@ -184,7 +185,7 @@ char *get_disp_protocol(char *returnptr){
 }
 
 char *get_terminal(char *returnptr){
-    char *term_pid = malloc(256), *path = malloc(32);
+    char *term_pid = malloc(128), *path = malloc(32);
     FILE *comm;
 
     // Get path for /proc/$$/stat (shell ppid)
@@ -192,10 +193,10 @@ char *get_terminal(char *returnptr){
 
     // Read /proc/$$/comm (shell ppid/terminal pid)
     comm = fopen(path, "r");
-    fgets(term_pid, 256, comm);
+    fgets(term_pid, 128, comm);
     fclose(comm);
     int counter = 0, start = 0, end = 0;
-    for(int i = 0; i < 256; i++){
+    for(int i = 0; i < 128; i++){
         if(term_pid[i] == ' ') counter++;
         if(counter == 3 && start == 0) start = i+1;
         if(counter == 4){
@@ -210,7 +211,7 @@ char *get_terminal(char *returnptr){
     sprintf(path, "/proc/%s/comm", term_pid);
     
     comm = fopen(path, "r");
-    fgets(returnptr, 256, comm);
+    fgets(returnptr, 128, comm);
     fclose(comm);
 
     returnptr[strlen(returnptr)-1] = '\0';
@@ -222,7 +223,7 @@ char *get_cpuname(char *returnptr){
     
     cpuinfo = fopen("/proc/cpuinfo", "r");
     while(*returnptr != EOF){
-        fgets(returnptr, 256, cpuinfo);
+        fgets(returnptr, 128, cpuinfo);
         if(strncmp(returnptr, "model name", 10) == 0){
             returnptr += 13;
             returnptr[strlen(returnptr)-1] = '\0';
@@ -236,6 +237,7 @@ char *get_cpuname(char *returnptr){
 
 char *get_gpuname(char *returnptr, char bitmask){
     struct pci_access *pciaccess;
+    returnptr[0] = 0;
 
     pciaccess = pci_alloc();
     pci_init(pciaccess);            // Initialize the PCI library
@@ -317,7 +319,7 @@ struct batteries get_battery(){
 	batteries.num_of_batts = 0;
 
 	for(int i = 0; true; i++){
-		char *path = malloc(64), *temp = malloc(16);
+		char *path = malloc(128), *temp = malloc(16);
 		
 		// Read battery status
 		sprintf(path, "/sys/class/power_supply/BAT%d/status", i);

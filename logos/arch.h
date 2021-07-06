@@ -18,7 +18,7 @@ copies or substantial portions of the Software.
 */
 
 #include "colors.h"
-#define ACCENT_COLOR "\e[96:1m"
+#define ACCENT_COLOR1 "\e[96:1m"
 #define ACCENT_COLOR2 "\e[96:1m"
 
 char *logo_arch[] = {

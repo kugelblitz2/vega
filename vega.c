@@ -1,4 +1,4 @@
-#include "linux/linux.c"
+#include "common/corefuncs.c"
 
 int main(){
 	
@@ -18,23 +18,23 @@ int main(){
 	
 	char *ip = malloc(256);
 
-
-	printf("Vega Unformatted Output: \n");
-	printf("username %s\n", get_username(username));
-	printf("hostname %s\n", get_hostname(hostname));
-	printf("osname %s\n", get_osname(os_name));
-	printf("hwname %s\n", get_hwname(hwname, 0b11110000));
-	printf("kernel %s\n", get_kernel(kernel));
-
-	printf("uptime %ld\n", get_uptime());
 	
-	printf("shell %s\n", get_shell(shell));
-	printf("screenres %s\n", get_screenres(screenres));
-	printf("de %s\n", get_de(de));
-	printf("disp_protocol %s\n", get_disp_protocol(disp_protocol));
-	printf("terminal %s\n", get_terminal(terminal));
-	printf("cpuname %s\n", get_cpuname(cpuname));
-	printf("gpuname %s\n", get_gpuname(gpuname, 0b11000000));
+	printf("%s\n", USERATMACHINE);
+	printf("%s\n", BAR);
+
+	printf("%s\n", MAKE_OSNAME);
+	printf("%s\n", MAKE_HWNAME(0b11110000));
+	printf("%s\n", MAKE_KERNEL);
+	printf("%s\n", MAKE_UPTIME);
+
+	printf("%s\n", MAKE_SHELL);
+	printf("%s\n", MAKE_TERMINAL);
+	printf("%s\n", MAKE_DE);
+	printf("%s\n", MAKE_DISP_PROTOCOL);
+	printf("%s\n", MAKE_SCREENRES);
+
+	printf("%s\n", MAKE_CPU);
+	printf("%s\n", MAKE_GPU(0b11000000));
 
 	printf("ramused %ld\n", get_ramused());
 	printf("ramtotal %ld\n", get_ramtotal());
@@ -51,9 +51,7 @@ int main(){
 			batteries.battery[i].charge_percent, batteries.battery[i].charge_status);
 	}
 	
-	printf("public ipv4 %s\n", get_ip(ip, 0b00000000));
-	printf("private ipv4 %s\n", get_ip(ip, 0b10000000));
-	printf("public ipv6 %s\n", get_ip(ip, 0b01000000));
-	printf("private ipv6 %s\n", get_ip(ip, 0b11000000));
+	printf("%s\n", MAKE_PRIVATE_IP);
+	printf("%s\n", MAKE_PUBLIC_IP);
 	return 0;
 }

@@ -18,7 +18,7 @@ copies or substantial portions of the Software.
 */
 
 #include "colors.h"
-#define ACCENT_COLOR "\e[35:1m"
+#define ACCENT_COLOR1 "\e[35:1m"
 #define ACCENT_COLOR2 "\e[35:1m"
 
 char *logo_gentoo[] = {
